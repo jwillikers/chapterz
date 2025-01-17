@@ -18,7 +18,7 @@ endif::[]
 :Nushell: https://www.nushell.sh/[Nushell]
 :tone: https://github.com/sandreas/tone[tone]
 
-A script to help with creating chapters for {MusicBrainz}.
+A script to help with creating audiobook chapters for {MusicBrainz}.
 
 == Usage
 

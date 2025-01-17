@@ -3,7 +3,7 @@ repository:
 
   name: chapterz
   # A short description of the repository that will show up on GitHub
-  description: "A script to help with creating chapters for MusicBrainz"
+  description: "A script to help with audiobook creating chapters for MusicBrainz"
   # A URL with more information about the repository
   # homepage: ""
   # A comma-separated list of topics to set on the repository

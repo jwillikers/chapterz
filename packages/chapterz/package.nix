@@ -42,7 +42,7 @@ else
     '';
 
     meta = {
-      description = "A script to help with creating chapters for MusicBrainz";
+      description = "A script to help with creating audiobook chapters for MusicBrainz";
       homepage = "https://github.com/jwillikers/chapterz";
       # changelog = "https://github.com/jwillikers/chapterz/releases/tag/v${version}";
       license = with lib.licenses; [ mit ];
