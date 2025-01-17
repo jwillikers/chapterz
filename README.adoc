@@ -1,0 +1,134 @@
+= chapterz
+Jordan Williams <jordan@jwillikers.com>
+:experimental:
+:icons: font
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+:Asciidoctor_: https://asciidoctor.org/[Asciidoctor]
+:just: https://github.com/casey/just[just]
+:Linux: https://www.linuxfoundation.org/[Linux]
+:MusicBrainz: https://musicbrainz.org/[MusicBrainz]
+:Nix: https://nixos.org/[Nix]
+:nix-direnv: https://github.com/nix-community/nix-direnv[nix-direnv]
+:Nushell: https://www.nushell.sh/[Nushell]
+:tone: https://github.com/sandreas/tone[tone]
+
+A script to help with creating chapters for {MusicBrainz}.
+
+== Usage
+
+The script can extract the chapter metadata from an M4B file using {tone}, from an Audible ASIN, or from a MusicBrainz Release ID and format it for import into MusicBrainz or in the `chapters.txt` format for tone.
+The script only requires {Nushell} and {tone}, both of which are cross-platform.
+For Linux and macOS users, this repository contains a {Nix} package which will take care of the dependencies for you.
+Here are the steps for using the script.
+
+. If not using {Nix}, install {Nushell} and {tone}.
+
+. Clone this project's repository.
++
+[,sh]
+----
+git clone https://github.com/jwillikers/chapterz.git
+----
+
+. Change into the project directory.
++
+[,sh]
+----
+cd chapterz
+----
+
+. If you're using {nix-direnv}, described in more detail in the <<Develop>> section, simply run `direnv allow` to take care of the dependencies.
+
+. Now, the provided script can be run like so.
++
+--
+[,sh]
+----
+./chapterz.nu book.m4b
+----
+
+Alternatively, if you're using Nix but not using `nix-direnv`, you can run `nix build` and then execute the script in the resulting build output with `result/bin/chapterz.nu`.
+--
+
+. Now edit the output from the previous command as necessary and paste it in the _Add medium_ dialog in MusicBrainz.
+
+== A Little More Detail
+
+Unfortunately, MusicBrainz doesn't support down to the millisecond level in their editor yet.
+See the issue https://tickets.metabrainz.org/browse/MBS-7130[MBS-7130].
+This requires rounding the track lengths to the nearest second.
+When considering these track lengths as only track lengths, there's not much of a problem here.
+However, these track lengths can be used to determine the chapter offsets for chapters in an M4B file.
+That's something that is very desirable for M4B's which may have chapter markings that are wrong or not even named at all.
+Across multiple tracks, the rounding error in the track lengths can accumulate to the point where the resulting chapter offsets are no longer accurate.
+To accommodate this, I take into account the cumulative rounding error and round in whichever direction minimizes the total error.
+This should keep the chapter offsets generated from the track lengths within half a second of their true position.
+
+== Develop
+
+The `nix develop` command can be used to enter or run commands in an environment with all of the necessary dependencies.
+For convenience, direnv can be used to automatically load this environment when entering the project's directory.
+The https://marketplace.visualstudio.com/items?itemName=mkhl.direnv[mkhl.direnv VSCode extension] integrates this environment in VSCode for development.
+Nix also generates the configuration for https://pre-commit.com/[pre-commit], which automates formatting and various checks when committing changes.
+Follow the instructions here to set up your development environment using Nix.
+
+. Install an implementation of {Nix}, such as https://lix.systems[Lix] used here.
++
+[,sh]
+----
+curl -sSf -L https://install.lix.systems/lix | sh -s -- install
+----
+
+. Install direnv for your system according to the https://direnv.net/docs/installation.html[direnv installation instructions].
++
+[,sh]
+----
+sudo rpm-ostree install direnv
+sudo systemctl reboot
+----
+
+. Integrate direnv with your shell by following the instructions on the https://direnv.net/docs/hook.html[direnv Setup page].
+
+. Permit the direnv configuration for the repository.
++
+[,sh]
+----
+direnv allow
+----
+
+. Use `nix run` to run the script.
++
+[,sh]
+----
+nix run .#chapterz
+----
+
+[NOTE]
+====
+I plan on making some improvements to the script to make it more helpful.
+====
+
+== Contributing
+
+Contributions in the form of issues, feedback, and even pull requests are welcome.
+Make sure to adhere to the project's link:CODE_OF_CONDUCT.adoc[Code of Conduct].
+
+== Code of Conduct
+
+Refer to the project's link:CODE_OF_CONDUCT.adoc[Code of Conduct] for details.
+
+== License
+
+This repository is licensed under the link:LICENSE[MIT license].
+
+© 2025 Jordan Williams
+
+== Authors
+
+mailto:{email}[{author}]

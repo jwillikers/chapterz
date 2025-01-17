@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "mkhl.direnv",
+    "ibecker.treefmt-vscode",
+    "asciidoctor.asciidoctor-vscode",
+    "tamasfe.even-better-toml",
+    "bbenoist.nix",
+    "tekumara.typos-vscode",
+    "nefrob.vscode-just-syntax",
+    "thenuprojectcontributors.vscode-nushell-lang",
+    "jnoortheen.nix-ide"
+  ]
+}

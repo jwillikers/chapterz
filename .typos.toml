@@ -1,0 +1,11 @@
+[default]
+extend-ignore-re = [
+  "sha256[[:space:]]*=[[:space:]]*\"[[:alnum:]]+\"",
+  "hash[[:space:]]*=[[:space:]]*\"[[:alnum:]]+\"",
+]
+
+[default.extend-identifiers]
+PNGs = "PNGs"
+
+[default.extend-words]
+opf = "opf"
