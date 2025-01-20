@@ -123,9 +123,7 @@ export def rename_chapters [
     --offset: int # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
     --prefix: string # A prefix to add before the name of each chapter
     --titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
-] [
-    table<index: int, title: string, duration: duration> -> table<index: int, title: string, duration: duration>
-]: {
+]: table<index: int, title: string, duration: duration> -> table<index: int, title: string, duration: duration> {
     let chapters = $in
     if ($chapters | length) <= 1 {
         return $chapters
@@ -188,7 +186,7 @@ def main [
     --chapter-titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
     --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
     --round # Force rounding when outputting in the chapters.txt format
-]: {
+] {
     let input_type = (
         if ($input | path parse | get extension) == "m4b" {
           "m4b"

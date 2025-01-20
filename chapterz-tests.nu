@@ -337,7 +337,7 @@ def test_rename_chapters [] {
   test_rename_chapters_prefix_titles
 }
 
-def main []: {
+def main [] {
   test_round_to_second_using_cumulative_offset
   test_has_default_chapters
   test_rename_chapters
