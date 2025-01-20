@@ -90,15 +90,104 @@ export def chapters_from_musicbrainz_release_media []: table -> string {
   )
 }
 
+# Determine if the chapters are named according to standard defaults.
+#
+# Default naming schemes:
+#
+# Libro.fm: Title - Track <x>
+# Audible: Chapter <x>
+#
+export def has_default_chapters []: table<index: int, title: string, duration: duration> -> bool {
+    let chapters = $in
+    if ($chapters | is-empty) {
+        return false
+    }
+    (
+        (
+            $chapters | all {|c|
+                $c.title =~ '^Chapter [0-9]+$'
+            }
+        ) or (
+            $chapters | all {|c|
+                $c.title =~ ' - Track [0-9]+$'
+            }
+        )
+    )
+}
+
+# Rename chapters.
+#
+# Note that the indices most be 1-based and not 0-based.
+#
+export def rename_chapters [
+    --offset: int # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
+    --prefix: string # A prefix to add before the name of each chapter
+    --titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
+] [
+    table<index: int, title: string, duration: duration> -> table<index: int, title: string, duration: duration>
+]: {
+    let chapters = $in
+    if ($chapters | length) <= 1 {
+        return $chapters
+    }
+    let offset = (
+        if $offset == null {
+            let c = $chapters | first;
+            if $c.duration < 1min {
+                1
+            } else {
+                0
+            }
+        } else {
+            $offset
+        }
+    )
+    let suffix = (
+        if $titles {
+            ': ""'
+        } else {
+            null
+        }
+    )
+    $chapters | each {|c|
+        if $c.index == 1 {
+            if $c.duration < 1min {
+                $c | update title "Opening Credits"
+            } else {
+                if $c.index - $offset == 0 {
+                    $c | update title "Opening Credits / Prologue"
+                } else {
+                    $c | update title $"Opening Credits / ($prefix)Chapter ($c.index - $offset)($suffix)"
+                }
+            }
+        } else if $c.index == ($chapters | length) {
+            if $c.duration < 1min {
+                $c | update title "End Credits"
+            } else {
+                $c | update title $"($prefix)Chapter ($c.index - $offset)($suffix) / End Credits"
+            }
+        } else {
+            if $c.index - $offset == 0 {
+                $c | update title "Prologue"
+            } else {
+                $c | update title $"($prefix)Chapter ($c.index - $offset)($suffix)"
+            }
+        }
+    }
+}
+
 # Print out the chapters for an audiobook in the format used when adding the track list to MusicBrainz.
 #
 # Takes the path to an M4B file, an Audible ASIN, or a MusicBrainz Release ID.
 #
 def main [
     input: string
-    format: string = "musicbrainz" # Can also be "chapters.txt" or "debug"
-    # --chapter-offset: int = 0 # The number to use as the first chapter number
-    --round # Force rounding for chapters.txt
+    --format: string = "musicbrainz" # Can also be "chapters.txt" or "debug"
+    --chapter-offset: any # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
+    --chapter-prefix: string # A prefix to add before the name of each chapter
+    --chapter-titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
+    --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
+    --round # Force rounding when outputting in the chapters.txt format
 ]: {
     let input_type = (
         if ($input | path parse | get extension) == "m4b" {
@@ -125,7 +214,7 @@ def main [
             | enumerate
             | each {|c|
                 {
-                    index: $c.index
+                    index: ($c.index + 1)
                     title: $c.item.title
                     duration: ($c.item.length | into duration --unit ms)
                 }
@@ -136,7 +225,7 @@ def main [
             | enumerate
             | each {|c|
                 {
-                    index: $c.index
+                    index: ($c.index + 1)
                     title: $c.item.title
                     duration: ($c.item.lengthMs | into duration --unit ms)
                 }
@@ -169,6 +258,35 @@ def main [
     )
     let start_offsets = (
         $chapters | get duration | lengths_to_start_offsets
+    )
+
+    let rename_chapters = (
+        if $rename_chapters == null {
+            $chapters | has_default_chapters
+        } else {
+            $rename_chapters
+        }
+    )
+
+    # Rename chapters
+    let chapters = (
+        if $rename_chapters {
+            if $chapter_titles {
+                if $chapter_offset == null {
+                    $chapters | rename_chapters --prefix $chapter_prefix --titles
+                } else {
+                    $chapters | rename_chapters --offset $chapter_offset --prefix $chapter_prefix --titles
+                }
+            } else {
+                if $chapter_offset == null {
+                    $chapters | rename_chapters --prefix $chapter_prefix
+                } else {
+                    $chapters | rename_chapters --offset $chapter_offset --prefix $chapter_prefix
+                }
+            }
+        } else {
+            $chapters
+        }
     )
 
     (
@@ -206,16 +324,18 @@ def main [
                 | fill --width 2 --alignment right --character '0'
             )
             if $format == "musicbrainz" {
-                $"($c.index + 1) ($c.title) \(($hours):($minutes):($seconds)\)"
+                $"($c.index) ($c.title) \(($hours):($minutes):($seconds)\)"
             } else if $format == "chapters.txt" {
                 let offset = $start_offsets | get $c.index | format_chapter_duration
                 $"($offset) ($c.title)"
             } else if $format == "debug" {
                 {
                     index: $c.index
-                    start_offset: ($start_offsets | get $c.index | format_chapter_duration)
-                    length: $"($hours):($minutes):($seconds)"
                     title: $c.title
+                    duration: $c.duration
+                    duration_millis: ($c.duration | format duration ms)
+                    chapters_txt_start_offset: ($start_offsets | get $c.index | format_chapter_duration)
+                    musicbrainz_length: $"($hours):($minutes):($seconds)"
                 }
             }
         }
