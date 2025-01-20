@@ -31,14 +31,19 @@ else
 
     installPhase = ''
       runHook preInstall
-      install -D --mode=0755 --target-directory=$out/bin chapterz.nu
-      wrapProgram $out/bin/chapterz.nu \
-        --prefix PATH : ${
-          lib.makeBinPath [
-            tone
-          ]
-        }
+      install -D --mode=0755 --target-directory=$out/bin chapterz.nu embed-chapterz.nu
       runHook postInstall
+    '';
+
+    postFixup = ''
+      for f in $out/bin/* ; do
+        wrapProgram $f \
+          --prefix PATH : ${
+            lib.makeBinPath [
+              tone
+            ]
+          }
+      done
     '';
 
     meta = {

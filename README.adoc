@@ -23,7 +23,8 @@ A script to help with creating audiobook chapters for {MusicBrainz}.
 == Usage
 
 The script can extract the chapter metadata from an M4B file using {tone}, from an Audible ASIN, or from a MusicBrainz Release ID and format it for import into MusicBrainz or in the `chapters.txt` format for tone.
-The script only requires {Nushell} and {tone}, both of which are cross-platform.
+An second script, `embed-chapterz.nu` can embed chapters in an M4B file given the source of the chapters.
+The scripts only require {Nushell} and {tone}, both of which are cross-platform.
 For Linux and macOS users, this repository contains a {Nix} package which will take care of the dependencies for you.
 Here are the steps for using the script.
 
@@ -57,6 +58,9 @@ Alternatively, if you're using Nix but not using `nix-direnv`, you can run `nix 
 --
 
 . Now edit the output from the previous command as necessary and paste it in the _Add medium_ dialog in MusicBrainz.
+
+The `embed-chapterz.nu` script can be used in the same manner.
+I takes an M4B file as its first argument and either a MusicBrainz Release ID, an Audible ASIN, or the path to a `chapters.txt` file as its second argument.
 
 == A Little More Detail
 
@@ -101,18 +105,6 @@ sudo systemctl reboot
 ----
 direnv allow
 ----
-
-. Use `nix run` to run the script.
-+
-[,sh]
-----
-nix run .#chapterz
-----
-
-[NOTE]
-====
-I plan on making some improvements to the script to make it more helpful.
-====
 
 == Contributing
 
