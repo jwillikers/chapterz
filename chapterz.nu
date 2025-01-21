@@ -120,9 +120,10 @@ export def has_default_chapters []: table<index: int, title: string, duration: d
 # Note that the indices most be 1-based and not 0-based.
 #
 export def rename_chapters [
+    --chapter-word: string = "Chapter" # The string to use for the name of each chapter. This is usually "Chapter".
     --offset: int # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
     --prefix: string # A prefix to add before the name of each chapter
-    --titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
+    --suffix: string # A suffix to add after the name of each chapter
 ]: table<index: int, title: string, duration: duration> -> table<index: int, title: string, duration: duration> {
     let chapters = $in
     if ($chapters | length) <= 1 {
@@ -140,13 +141,6 @@ export def rename_chapters [
             $offset
         }
     )
-    let suffix = (
-        if $titles {
-            ': ""'
-        } else {
-            null
-        }
-    )
     $chapters | each {|c|
         if $c.index == 1 {
             if $c.duration < 1min {
@@ -155,20 +149,20 @@ export def rename_chapters [
                 if $c.index - $offset == 0 {
                     $c | update title "Opening Credits / Prologue"
                 } else {
-                    $c | update title $"Opening Credits / ($prefix)Chapter ($c.index - $offset)($suffix)"
+                    $c | update title $"Opening Credits / ($prefix)($chapter_word) ($c.index - $offset)($suffix)"
                 }
             }
         } else if $c.index == ($chapters | length) {
             if $c.duration < 1min {
                 $c | update title "End Credits"
             } else {
-                $c | update title $"($prefix)Chapter ($c.index - $offset)($suffix) / End Credits"
+                $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix) / End Credits"
             }
         } else {
             if $c.index - $offset == 0 {
                 $c | update title "Prologue"
             } else {
-                $c | update title $"($prefix)Chapter ($c.index - $offset)($suffix)"
+                $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix)"
             }
         }
     }
@@ -182,8 +176,9 @@ def main [
     input: string
     --format: string = "musicbrainz" # Can also be "chapters.txt" or "debug"
     --chapter-offset: any # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
-    --chapter-prefix: string # A prefix to add before the name of each chapter
-    --chapter-titles # Whether to include a colon followed by an empty string after each chapter name where a title can be added
+    --chapter-prefix: string # A prefix to add before the title of each chapter
+    --chapter-suffix: string # A suffix to add after the title of each chapter
+    --chapter-word: string = "Chapter" # The string to use for the name of each chapter. This is usually "Chapter".
     --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
     --round # Force rounding when outputting in the chapters.txt format
 ] {
@@ -269,18 +264,10 @@ def main [
     # Rename chapters
     let chapters = (
         if $rename_chapters {
-            if $chapter_titles {
-                if $chapter_offset == null {
-                    $chapters | rename_chapters --prefix $chapter_prefix --titles
-                } else {
-                    $chapters | rename_chapters --offset $chapter_offset --prefix $chapter_prefix --titles
-                }
+            if $chapter_offset == null {
+                $chapters | rename_chapters --chapter-word $chapter_word --prefix $chapter_prefix --suffix $chapter_suffix
             } else {
-                if $chapter_offset == null {
-                    $chapters | rename_chapters --prefix $chapter_prefix
-                } else {
-                    $chapters | rename_chapters --offset $chapter_offset --prefix $chapter_prefix
-                }
+                $chapters | rename_chapters --chapter-word $chapter_word --offset $chapter_offset --prefix $chapter_prefix --suffix $chapter_suffix
             }
         } else {
             $chapters
