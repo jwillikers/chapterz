@@ -285,7 +285,7 @@ def test_rename_chapters_prefix [] {
   assert equal ($chapters | rename_chapters --prefix 'Part One: "ABC", ') $expected
 }
 
-def test_rename_chapters_titles [] {
+def test_rename_chapters_suffix [] {
   let chapters = [
     [index title duration];
     [1 "Hogfather - Track 001" 5min]
@@ -302,10 +302,10 @@ def test_rename_chapters_titles [] {
     [4 'Chapter 4: ""' 1148453ms]
     [5 'Chapter 5: "" / End Credits' 30min]
   ]
-  assert equal ($chapters | rename_chapters --titles) $expected
+  assert equal ($chapters | rename_chapters --suffix ': ""') $expected
 }
 
-def test_rename_chapters_prefix_titles [] {
+def test_rename_chapters_prefix_suffix [] {
   let chapters = [
     [index title duration];
     [1 "Hogfather - Track 001" 5sec]
@@ -322,7 +322,27 @@ def test_rename_chapters_prefix_titles [] {
     [4 'Part One: "ABC", Chapter 3: ""' 1148453ms]
     [5 'Part One: "ABC", Chapter 4: "" / End Credits' 30min]
   ]
-  assert equal ($chapters | rename_chapters --prefix 'Part One: "ABC", ' --titles) $expected
+  assert equal ($chapters | rename_chapters --prefix 'Part One: "ABC", ' --suffix ': ""') $expected
+}
+
+def test_rename_chapters_chapter_word [] {
+  let chapters = [
+    [index title duration];
+    [1 "Hogfather - Track 001" 5min]
+    [2 "Hogfather - Track 002" 7191ms]
+    [3 "Hogfather - Track 003" 1144834ms]
+    [4 "Hogfather - Track 004" 1148453ms]
+    [5 "Hogfather - Track 005" 30min]
+  ]
+  let expected = [
+    [index title duration];
+    [1 "Opening Credits / Part 1" 5min]
+    [2 "Part 2" 7191ms]
+    [3 "Part 3" 1144834ms]
+    [4 "Part 4" 1148453ms]
+    [5 "Part 5 / End Credits" 30min]
+  ]
+  assert equal ($chapters | rename_chapters --chapter-word "Part") $expected
 }
 
 def test_rename_chapters [] {
@@ -333,8 +353,9 @@ def test_rename_chapters [] {
   test_rename_chapters_separate_credits
   test_rename_chapters_offset
   test_rename_chapters_prefix
-  test_rename_chapters_titles
-  test_rename_chapters_prefix_titles
+  test_rename_chapters_suffix
+  test_rename_chapters_prefix_suffix
+  test_rename_chapters_chapter_word
 }
 
 def main [] {
