@@ -129,6 +129,11 @@ export def rename_chapters [
     if ($chapters | length) <= 1 {
         return $chapters
     }
+    let chapters = $chapters | sort-by index
+    # todo Handle indexing automatically when it isn't 1-based.
+    if ($chapters | first | get index) != 1 {
+      error make {msg: "rename_chapters requires 1-based indices"}
+    }
     let offset = (
         if $offset == null {
             let c = $chapters | first;
