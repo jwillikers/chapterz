@@ -430,17 +430,17 @@ def test_parse_chapter_title_opening_credits [] {
   assert equal ($chapter | parse_chapter_title) $expected
 }
 
-# def test_parse_chapter_title_opening_credits_chapter_one [] {
-#   let chapter = 'Opening Credits / Chapter 1'
-#   let expected = {
-#     part: ""
-#     part_title: ""
-#     chapter: "Opening Credits / Chapter 1"
-#     chapter_title: ""
-#     chapter_part: ""
-#   }
-#   assert equal ($chapter | parse_chapter_title) $expected
-# }
+def test_parse_chapter_title_opening_credits_chapter_one [] {
+  let chapter = 'Opening Credits / Chapter 1'
+  let expected = {
+    part: ""
+    part_title: ""
+    chapter: "Opening Credits / Chapter 1"
+    chapter_title: ""
+    chapter_part: ""
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
 
 def test_parse_chapter_title [] {
   test_parse_chapter_title_all_parts
@@ -449,7 +449,7 @@ def test_parse_chapter_title [] {
   test_parse_chapter_title_chapter_part
   test_parse_chapter_title_part_chapter
   test_parse_chapter_title_opening_credits
-  # test_parse_chapter_title_opening_credits_chapter_one
+  test_parse_chapter_title_opening_credits_chapter_one
 }
 
 def main [] {

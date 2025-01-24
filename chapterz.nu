@@ -192,7 +192,7 @@ export def parse_chapter_title []: string -> record<part: string, part_title: st
     (
         $input
         # todo Split into multiple rows if there's a '/'.
-        | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
+        | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s/]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
         | each {|c|
             {
                 part: $c.part
@@ -361,10 +361,10 @@ def main [
             if $format == "musicbrainz" {
                 $"($c.index) ($c.title) \(($hours):($minutes):($seconds)\)"
             } else if $format == "chapters.txt" {
-                let offset = $start_offsets | get $c.index | format_chapter_duration
+                let offset = $start_offsets | get ($c.index - 1) | format_chapter_duration
                 $"($offset) ($c.title)"
             } else if $format == "OpenLibrary" {
-                let offset = $start_offsets | get $c.index | format_chapter_duration
+                let offset = $start_offsets | get ($c.index - 1) | format_chapter_duration
                 let chapter_components = $c.title | parse_chapter_title
                 # todo Handle parts.
                 $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($offset)"
