@@ -358,9 +358,104 @@ def test_rename_chapters [] {
   test_rename_chapters_chapter_word
 }
 
+def test_parse_chapter_title_all_parts [] {
+  let chapter = 'Part One: "The First Part", Chapter 1: "The First Chapter", Part 1'
+  let expected = {
+    part: "Part One"
+    part_title: "The First Part"
+    chapter: "Chapter 1"
+    chapter_title: "The First Chapter"
+    chapter_part: "Part 1"
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+def test_parse_chapter_title_chapter_only [] {
+  let chapter = 'Chapter 1'
+  let expected = {
+    part: ""
+    part_title: ""
+    chapter: "Chapter 1"
+    chapter_title: ""
+    chapter_part: ""
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+def test_parse_chapter_title_chapter_with_name [] {
+  let chapter = 'Chapter 1: "First Chapter"'
+  let expected = {
+    part: ""
+    part_title: ""
+    chapter: "Chapter 1"
+    chapter_title: "First Chapter"
+    chapter_part: ""
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+def test_parse_chapter_title_chapter_part [] {
+  let chapter = 'Chapter 1, Part 1'
+  let expected = {
+    part: ""
+    part_title: ""
+    chapter: "Chapter 1"
+    chapter_title: ""
+    chapter_part: "Part 1"
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+def test_parse_chapter_title_part_chapter [] {
+  let chapter = 'Part One, Chapter 1'
+  let expected = {
+    part: "Part One"
+    part_title: ""
+    chapter: "Chapter 1"
+    chapter_title: ""
+    chapter_part: ""
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+def test_parse_chapter_title_opening_credits [] {
+  let chapter = 'Opening Credits'
+  let expected = {
+    part: ""
+    part_title: ""
+    chapter: "Opening Credits"
+    chapter_title: ""
+    chapter_part: ""
+  }
+  assert equal ($chapter | parse_chapter_title) $expected
+}
+
+# def test_parse_chapter_title_opening_credits_chapter_one [] {
+#   let chapter = 'Opening Credits / Chapter 1'
+#   let expected = {
+#     part: ""
+#     part_title: ""
+#     chapter: "Opening Credits / Chapter 1"
+#     chapter_title: ""
+#     chapter_part: ""
+#   }
+#   assert equal ($chapter | parse_chapter_title) $expected
+# }
+
+def test_parse_chapter_title [] {
+  test_parse_chapter_title_all_parts
+  test_parse_chapter_title_chapter_only
+  test_parse_chapter_title_chapter_with_name
+  test_parse_chapter_title_chapter_part
+  test_parse_chapter_title_part_chapter
+  test_parse_chapter_title_opening_credits
+  # test_parse_chapter_title_opening_credits_chapter_one
+}
+
 def main [] {
   test_round_to_second_using_cumulative_offset
   test_has_default_chapters
   test_rename_chapters
+  test_parse_chapter_title
   echo "All tests passed!"
 }

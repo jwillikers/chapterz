@@ -1,5 +1,7 @@
 #!/usr/bin/env nu
 
+# todo Add a flag to combine chapters split into multiple parts.
+
 use std log
 
 # Get a list of start offsets from a list of durations
@@ -173,13 +175,56 @@ export def rename_chapters [
     }
 }
 
+# # Find all unquoted forward slashes in a string
+# export def indices_of_unquoted_forward_slashes []: string -> list<int> {
+#     let input = $in
+#     # todo Handle nested quotes
+#     for quote in ["'", '"'] {
+#         let first_single_quote $input | str index-of $quote --range 0
+#     }
+#     []
+# }
+
+# Parse the Part, Chapter, and Title portions of a chapter.
+export def parse_chapter_title []: string -> record<part: string, part_title: string, chapter: string, chapter_title: string, chapter_part: string> {
+    let input = $in
+    let split = str index-of "/"
+    (
+        $input
+        # todo Split into multiple rows if there's a '/'.
+        | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
+        | each {|c|
+            {
+                part: $c.part
+                part_title: (
+                    $c.part_title
+                    | str trim --char ':' --left
+                    | str trim --left
+                    | str trim --char '"'
+                    | str trim --char "'"
+                )
+                chapter: $c.chapter
+                chapter_title: (
+                    $c.chapter_title
+                    | str trim --char ':' --left
+                    | str trim --left
+                    | str trim --char '"'
+                    | str trim --char "'"
+                )
+                chapter_part: $c.chapter_part
+            }
+        }
+        | first
+    )
+}
+
 # Print out the chapters for an audiobook in the format used when adding the track list to MusicBrainz.
 #
 # Takes the path to an M4B file, an Audible ASIN, or a MusicBrainz Release ID.
 #
 def main [
     input: string
-    --format: string = "musicbrainz" # Can also be "chapters.txt" or "debug"
+    --format: string = "musicbrainz" # Can also be "chapters.txt", "OpenLibrary", or "debug". The OpenLibrary format is for the table of contents of an edition in OpenLibrary.
     --chapter-offset: any # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
     --chapter-prefix: string # A prefix to add before the title of each chapter
     --chapter-suffix: string # A suffix to add after the title of each chapter
@@ -318,6 +363,11 @@ def main [
             } else if $format == "chapters.txt" {
                 let offset = $start_offsets | get $c.index | format_chapter_duration
                 $"($offset) ($c.title)"
+            } else if $format == "OpenLibrary" {
+                let offset = $start_offsets | get $c.index | format_chapter_duration
+                let chapter_components = $c.title | parse_chapter_title
+                # todo Handle parts.
+                $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($offset)"
             } else if $format == "debug" {
                 {
                     index: $c.index
