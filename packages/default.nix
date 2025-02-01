@@ -1,4 +1,4 @@
 { pkgs, ... }:
 {
-  chapterz = pkgs.unstable.callPackage ./chapterz/package.nix { };
+  chapterz = pkgs.callPackage ./chapterz/package.nix { };
 }

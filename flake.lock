@@ -55,13 +55,42 @@
         "type": "github"
       }
     },
+    "nix-update-scripts": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "pre-commit-hooks": [
+          "pre-commit-hooks"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1738160982,
+        "narHash": "sha256-KVQpev3KNtatrpdWR8/M6U6Nc8EUh0j4JUa5DS/u5l8=",
+        "owner": "jwillikers",
+        "repo": "nix-update-scripts",
+        "rev": "dd55bfb9b5d0211fb7020b4334e009cce9adc959",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jwillikers",
+        "repo": "nix-update-scripts",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1736916166,
-        "narHash": "sha256-puPDoVKxkuNmYIGMpMQiK8bEjaACcCksolsG36gdaNQ=",
+        "lastModified": 1738277201,
+        "narHash": "sha256-6L+WXKCw5mqnUIExvqkD99pJQ41xgyCk6z/H9snClwk=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e24b4c09e963677b1beea49d411cd315a024ad3a",
+        "rev": "666e1b3f09c267afd66addebe80fb05a5ef2b554",
         "type": "github"
       },
       "original": {
@@ -73,11 +102,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1737062831,
-        "narHash": "sha256-Tbk1MZbtV2s5aG+iM99U8FqwxU/YNArMcWAv6clcsBc=",
+        "lastModified": 1738142207,
+        "narHash": "sha256-NGqpVVxNAHwIicXpgaVqJEJWeyqzoQJ9oc8lnK9+WC4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "5df43628fdf08d642be8ba5b3625a6c70731c19c",
+        "rev": "9d3ae807ebd2981d593cddd0080856873139aa40",
         "type": "github"
       },
       "original": {
@@ -96,11 +125,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1737043064,
-        "narHash": "sha256-I/OuxGwXwRi5gnFPsyCvVR+IfFstA+QXEpHu1hvsgD8=",
+        "lastModified": 1737465171,
+        "narHash": "sha256-R10v2hoJRLq8jcL4syVFag7nIGE7m13qO48wRIukWNg=",
         "owner": "cachix",
         "repo": "pre-commit-hooks.nix",
-        "rev": "94ee657f6032d913fe0ef49adaa743804635b0bb",
+        "rev": "9364dc02281ce2d37a1f55b6e51f7c0f65a75f17",
         "type": "github"
       },
       "original": {
@@ -112,6 +141,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "nix-update-scripts": "nix-update-scripts",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "pre-commit-hooks": "pre-commit-hooks",
@@ -140,11 +170,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1737103437,
-        "narHash": "sha256-uPNWcYbhY2fjY3HOfRCR5jsfzdzemhfxLSxwjXYXqNc=",
+        "lastModified": 1738070913,
+        "narHash": "sha256-j6jC12vCFsTGDmY2u1H12lMr62fnclNjuCtAdF1a4Nk=",
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "d1ed3b385f8130e392870cfb1dbfaff8a63a1899",
+        "rev": "bebf27d00f7d10ba75332a0541ac43676985dea3",
         "type": "github"
       },
       "original": {
