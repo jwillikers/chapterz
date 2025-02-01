@@ -11,7 +11,6 @@
       };
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs = {
@@ -29,24 +28,15 @@
       self,
       nix-update-scripts,
       nixpkgs,
-      # deadnix: skip
-      nixpkgs-unstable,
       flake-utils,
       pre-commit-hooks,
       treefmt-nix,
-    }@inputs:
-    let
-      overlays = import ./overlays { inherit inputs; };
-      overlaysList = with overlays; [
-        unstablePackages
-      ];
-    in
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = overlaysList;
         };
         packages = import ./packages { inherit pkgs; };
         pre-commit = pre-commit-hooks.lib.${system}.run (
