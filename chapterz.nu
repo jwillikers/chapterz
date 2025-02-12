@@ -160,7 +160,7 @@ export def rename_chapters [
                 }
             }
         } else if $c.index == ($chapters | length) {
-            if $c.duration < 1min {
+            if $c.duration < 3min {
                 $c | update title "End Credits"
             } else {
                 $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix) / End Credits"
