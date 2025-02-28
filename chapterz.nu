@@ -167,7 +167,11 @@ export def rename_chapters [
             }
         } else {
             if $c.index - $offset == 0 {
-                $c | update title "Prologue"
+                if $c.duration < 1min {
+                    $c | update title "Epigraph"
+                } else {
+                    $c | update title "Prologue"
+                }
             } else {
                 $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix)"
             }

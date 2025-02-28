@@ -257,7 +257,7 @@ def test_rename_chapters_offset [] {
     [index title duration];
     [1 "Opening Credits" 29sec]
     [2 "Chapter -1" 7191ms]
-    [3 "Prologue" 7191ms]
+    [3 "Epigraph" 7191ms]
     [4 "Chapter 1" 1144834ms]
     [5 "Chapter 2" 1148453ms]
     [6 "Chapter 3 / End Credits" 30min]
