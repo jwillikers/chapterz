@@ -4,6 +4,7 @@ name: Build
     branches: ["main"]
     paths:
       - '**.nix'
+      - '**.nu'
       - .github/workflows/build.yaml
       - flake.lock
       - packages/**
@@ -11,6 +12,7 @@ name: Build
     branches: ["main"]
     paths:
       - '**.nix'
+      - '**.nu'
       - .github/workflows/build.yaml
       - flake.lock
       - packages/**
