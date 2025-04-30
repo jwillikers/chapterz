@@ -231,7 +231,7 @@ export def parse_chapter_title []: string -> record<part: string, part_title: st
 #
 def main [
     input: string
-    --format: string = "musicbrainz" # Can also be "chapters.txt", "OpenLibrary", or "debug". The OpenLibrary format is for the table of contents of an edition in OpenLibrary.
+    --format: string = "musicbrainz" # Can also be "chapters.txt", tone, "OpenLibrary", or "debug". The OpenLibrary format is for the table of contents of an edition in OpenLibrary.
     --chapter-offset: any # The difference between the track indices and the chapter numbers, i.e. the chapter number is the track index minus this value
     --chapter-prefix: string # A prefix to add before the title of each chapter
     --chapter-suffix: string # A suffix to add after the title of each chapter
@@ -368,10 +368,18 @@ def main [
             if $format == "musicbrainz" {
                 $"($c.index) ($c.title) \(($hours):($minutes):($seconds)\)"
             } else if $format == "chapters.txt" {
-                let offset = $start_offsets | get ($c.index - 1) | format_chapter_duration
+                let offset = $start_offsets | get $c.index | format_chapter_duration
                 $"($offset) ($c.title)"
+            } else if $format == "tone" {
+                let start = ($start_offsets | get $c.index) / 1ms
+                {
+                    index: $c.index
+                    start: $start
+                    length: ($d / 1ms)
+                    title: $c.title
+                }
             } else if $format == "OpenLibrary" {
-                let offset = $start_offsets | get ($c.index - 1) | format_chapter_duration
+                let offset = $start_offsets | get $c.index | format_chapter_duration
                 let chapter_components = $c.title | parse_chapter_title
                 # todo Handle parts.
                 $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($offset)"
@@ -388,7 +396,9 @@ def main [
         }
         | (
             let i = $in;
-            if $format == "debug" {
+            if $format == "tone" {
+                $i
+            } else if $format == "debug" {
                 $i | print
             } else {
                 $i | print --raw
