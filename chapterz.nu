@@ -4,6 +4,9 @@
 
 use std log
 
+export const chapterz_version = "0.0.1"
+export const user_agent = $"chapterz/($chapterz_version) \( https://github.com/jwillikers/chapterz \)"
+
 # Get a list of start offsets from a list of durations
 export def lengths_to_start_offsets []: list<duration> -> list<duration> {
   let lengths = $in | enumerate
@@ -73,7 +76,7 @@ export def round_to_second_using_cumulative_offset []: list<duration> -> list<du
 export def get_musicbrainz_release []: string -> record {
   let id = $in
   let url = "https://musicbrainz.org/ws/2/release"
-  http get --headers [Accept "application/json"] $"($url)/($id)/?inc=artist-credits+labels+recordings"
+  http get --headers [User-Agent $user_agent Accept "application/json"] $"($url)/($id)/?inc=recordings"
 }
 
 # Parse chapters out of MusicBrainz recordings data.
