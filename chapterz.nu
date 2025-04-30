@@ -371,11 +371,11 @@ def main [
                 let offset = $start_offsets | get $c.index | format_chapter_duration
                 $"($offset) ($c.title)"
             } else if $format == "tone" {
-                let start = ($start_offsets | get $c.index) / 1ms
+                let start = (($start_offsets | get $c.index) / 1ms) | math round
                 {
                     index: $c.index
                     start: $start
-                    length: ($d / 1ms)
+                    length: (($d / 1ms) | math round)
                     title: $c.title
                 }
             } else if $format == "OpenLibrary" {
