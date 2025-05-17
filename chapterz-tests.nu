@@ -452,10 +452,93 @@ def test_parse_chapter_title [] {
   test_parse_chapter_title_opening_credits_chapter_one
 }
 
+def test_combine_chapter_parts_none [] {
+  let input = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2" 7191ms]
+    [3 "Chapter 3" 1144834ms]
+    [4 "Chapter 4" 1148453ms]
+    [5 "Chapter 5" 340334ms]
+  ]
+  let expected = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2" 7191ms]
+    [3 "Chapter 3" 1144834ms]
+    [4 "Chapter 4" 1148453ms]
+    [5 "Chapter 5" 340334ms]
+  ]
+  assert equal ($input | combine_chapter_parts) $expected
+}
+
+def test_combine_chapter_parts_combine_one_chapter [] {
+  let input = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2, Part 1" 7191ms]
+    [3 "Chapter 2, Part 2" 1144834ms]
+    [4 "Chapter 3" 1148453ms]
+    [5 "Chapter 4" 340334ms]
+  ]
+  let expected = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2" 1152025ms]
+    [3 "Chapter 3" 1148453ms]
+    [4 "Chapter 4" 340334ms]
+  ]
+  assert equal ($input | combine_chapter_parts) $expected
+}
+
+def test_combine_chapter_parts_combine_two_chapters [] {
+  let input = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2, Part 1" 7191ms]
+    [3 "Chapter 2, Part 2" 1144834ms]
+    [4 "Chapter 3, Part 1" 1148453ms]
+    [5 "Chapter 3, Part 2" 340334ms]
+  ]
+  let expected = [
+    [index title duration];
+    [1 "Chapter 1" 30069ms]
+    [2 "Chapter 2" 1152025ms]
+    [3 "Chapter 3" 1488787ms]
+  ]
+  assert equal ($input | combine_chapter_parts) $expected
+}
+
+def test_combine_chapter_parts_combine_one_chapter_three_parts [] {
+  let input = [
+    [index title duration];
+    [1 "Part 1, Part 1" 30069ms]
+    [2 "Part 1, Part 2" 7191ms]
+    [3 "Part 1, Part 3" 1144834ms]
+    [4 "Part 2" 1148453ms]
+    [5 "Part 3" 340334ms]
+  ]
+  let expected = [
+    [index title duration];
+    [1 "Part 1" 1182094ms]
+    [2 "Part 2" 1148453ms]
+    [3 "Part 3" 340334ms]
+  ]
+  assert equal ($input | combine_chapter_parts) $expected
+}
+
+def test_combine_chapter_parts [] {
+  test_combine_chapter_parts_none
+  test_combine_chapter_parts_combine_one_chapter
+  test_combine_chapter_parts_combine_two_chapters
+  test_combine_chapter_parts_combine_one_chapter_three_parts
+}
+
 def main [] {
   test_round_to_second_using_cumulative_offset
   test_has_default_chapters
   test_rename_chapters
   test_parse_chapter_title
+  test_combine_chapter_parts
   echo "All tests passed!"
 }

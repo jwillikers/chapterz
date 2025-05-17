@@ -225,6 +225,55 @@ export def parse_chapter_title []: string -> record<part: string, part_title: st
     )
 }
 
+# Combine chapters split into multiple parts into complete chapters
+#
+# Only works for chapters titled according to the MusicBrainz Audiobook style guidelines.
+export def combine_chapter_parts []: table<index: int, title: string, duration: duration> -> table<index: int, title: string, duration: duration> {
+  let chapters = $in
+  let index_offset = $chapters.index | first
+  (
+    $chapters
+    | each {|chapter|
+      $chapter | update title (
+        $chapter.title
+        | parse --regex '(?P<title>.*?)(?P<part>, Part [0-9]+)?$'
+        | first
+      )
+    }
+    | reduce {|it acc|
+      if ($acc | is-empty) {
+        $acc | append $it
+      } else {
+        let last = (
+          if ($acc | describe | str starts-with record) {
+            $acc
+          } else {
+            $acc | last
+          }
+        )
+        if $last.title.title == $it.title.title {
+          let updated = $last | update duration ($last.duration + $it.duration)
+          if $acc == $last {
+            $updated
+          } else {
+            $acc | drop | append $updated
+          }
+        } else {
+          $acc | append $it
+        }
+      }
+    }
+    | enumerate
+    | each {|chapter|
+      {
+        index: ($chapter.index + $index_offset)
+        title: $chapter.item.title.title
+        duration: $chapter.item.duration
+      }
+    }
+  )
+}
+
 # Print out the chapters for an audiobook in the format used when adding the track list to MusicBrainz.
 #
 # Takes the path to an M4B file, an Audible ASIN, or a MusicBrainz Release ID.

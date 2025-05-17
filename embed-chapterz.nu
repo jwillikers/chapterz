@@ -6,8 +6,9 @@ use chapterz.nu *
 
 # Embed chapters in an M4B file from an Audible ASIN, a MusicBrainz Release ID, or a chapters.txt file.
 def main [
-    m4b: path # The M4B audiobook in which to embed the chapters
-    input: string # The source of the chapters
+  m4b: path # The M4B audiobook in which to embed the chapters
+  input: string # The source of the chapters
+  --combine-chapter-parts # Combine chapters split into multiple parts into individual chapters. Only works for chapters titled according to the MusicBrainz Audiobook style guideline.
 ]: {
     let input_type = (
         if ($input | path parse | get stem) == "chapters" and ($input | path parse | get extension) == "txt" {
@@ -53,6 +54,13 @@ def main [
                     title: $recording.item.title
                     duration: ($recording.item.length | into duration --unit ms)
                 }
+              }
+            )
+            let chapters = (
+              if $combine_chapter_parts {
+                $chapters | combine_chapter_parts
+              } else {
+                $chapters
               }
             )
             let start_offsets = $chapters | get duration | lengths_to_start_offsets
