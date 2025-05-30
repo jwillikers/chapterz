@@ -195,7 +195,6 @@ export def rename_chapters [
 # Parse the Part, Chapter, and Title portions of a chapter.
 export def parse_chapter_title []: string -> record<part: string, part_title: string, chapter: string, chapter_title: string, chapter_part: string> {
     let input = $in
-    let split = str index-of "/"
     (
         $input
         # todo Split into multiple rows if there's a '/'.
