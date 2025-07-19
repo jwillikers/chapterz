@@ -32,13 +32,19 @@
       pre-commit-hooks,
       treefmt-nix,
     }:
+    let
+      overlays = import ./overlays { };
+      overlaysList = with overlays; [
+        chapterz
+      ];
+    in
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs {
           inherit system;
+          overlays = overlaysList;
         };
-        packages = import ./packages { inherit pkgs; };
         pre-commit = pre-commit-hooks.lib.${system}.run (
           import ./pre-commit-hooks.nix { inherit pkgs treefmtEval; }
         );
@@ -64,14 +70,19 @@
               (builtins.attrValues treefmtEval.config.build.programs)
             ]
             ++ pre-commit.enabledPackages;
-          inputsFrom = with packages; [
+          inputsFrom = with pkgs; [
             chapterz
           ];
         };
         formatter = treefmtEval.config.build.wrapper;
-        packages = packages // {
-          default = self.packages.${system}.chapterz;
+        packages = {
+          inherit (pkgs) chapterz;
+          default = pkgs.chapterz;
         };
       }
-    );
+    )
+    // {
+      inherit overlays;
+      default = overlays.chapterz;
+    };
 }
