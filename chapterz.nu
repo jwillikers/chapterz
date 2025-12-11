@@ -8,10 +8,12 @@ export const chapterz_version = "0.0.1"
 export const user_agent = $"chapterz/($chapterz_version) \( https://github.com/jwillikers/chapterz \)"
 
 # Get a list of start offsets from a list of durations
-export def lengths_to_start_offsets []: list<duration> -> list<duration> {
+export def lengths_to_start_offsets []: [
+  list<duration> -> list<duration>
+] {
   let lengths = $in | enumerate
   $lengths | each {|i|
-    $lengths | where index < $i.index | reduce --fold 0ms {|it,acc|
+    $lengths | where index < $i.index | reduce --fold 0ms {|it, acc|
       $it.item + $acc
     }
   }
@@ -88,7 +90,7 @@ export def chapters_from_musicbrainz_release_media []: table -> string {
     | flatten
     | each {|recording|
       # Unfortunately, lengths are in seconds and not milliseconds.
-      let time = ($recording.length | into duration --unit ms | lengths_to_start_offsets | each {|t| $t | format_chapter_duration})
+      let time = ($recording.length | into duration --unit ms | collect | lengths_to_start_offsets | each {|t| $t | format_chapter_duration})
       $"($time) ($recording.title)"
     }
     | str join "\n"
@@ -200,10 +202,24 @@ export def parse_chapter_title []: string -> record<part: string, part_title: st
     # todo Split into multiple rows if there's a '/'.
     | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s/]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
     | each {|c|
+      let part_title = (
+        if ($c.part_title | is-empty) {
+          ""
+        } else {
+          $c.part_title
+        }
+      )
+      let chapter_title = (
+        if ($c.chapter_title | is-empty) {
+          ""
+        } else {
+          $c.chapter_title
+        }
+      )
       {
         part: $c.part
         part_title: (
-          $c.part_title
+          $part_title
           | str trim --char ':' --left
           | str trim --left
           | str trim --char '"'
@@ -211,7 +227,7 @@ export def parse_chapter_title []: string -> record<part: string, part_title: st
         )
         chapter: $c.chapter
         chapter_title: (
-          $c.chapter_title
+          $chapter_title
           | str trim --char ':' --left
           | str trim --left
           | str trim --char '"'
@@ -318,7 +334,7 @@ def main [
         }
       }
     } else if $input_type == "ASIN" {
-        http get $"https://api.audnex.us/books/($input)/chapters"
+        http get --headers [User-Agent $user_agent Accept "application/json"] $"https://api.audnex.us/books/($input)/chapters"
         | get chapters
         | enumerate
         | each {|c|

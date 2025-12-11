@@ -373,11 +373,11 @@ def test_parse_chapter_title_all_parts [] {
 def test_parse_chapter_title_chapter_only [] {
   let chapter = 'Chapter 1'
   let expected = {
-    part: ""
+    part: null
     part_title: ""
     chapter: "Chapter 1"
     chapter_title: ""
-    chapter_part: ""
+    chapter_part: null
   }
   assert equal ($chapter | parse_chapter_title) $expected
 }
@@ -385,11 +385,11 @@ def test_parse_chapter_title_chapter_only [] {
 def test_parse_chapter_title_chapter_with_name [] {
   let chapter = 'Chapter 1: "First Chapter"'
   let expected = {
-    part: ""
+    part: null
     part_title: ""
     chapter: "Chapter 1"
     chapter_title: "First Chapter"
-    chapter_part: ""
+    chapter_part: null
   }
   assert equal ($chapter | parse_chapter_title) $expected
 }
@@ -397,7 +397,7 @@ def test_parse_chapter_title_chapter_with_name [] {
 def test_parse_chapter_title_chapter_part [] {
   let chapter = 'Chapter 1, Part 1'
   let expected = {
-    part: ""
+    part: null
     part_title: ""
     chapter: "Chapter 1"
     chapter_title: ""
@@ -413,7 +413,7 @@ def test_parse_chapter_title_part_chapter [] {
     part_title: ""
     chapter: "Chapter 1"
     chapter_title: ""
-    chapter_part: ""
+    chapter_part: null
   }
   assert equal ($chapter | parse_chapter_title) $expected
 }
@@ -421,11 +421,11 @@ def test_parse_chapter_title_part_chapter [] {
 def test_parse_chapter_title_opening_credits [] {
   let chapter = 'Opening Credits'
   let expected = {
-    part: ""
+    part: null
     part_title: ""
     chapter: "Opening Credits"
     chapter_title: ""
-    chapter_part: ""
+    chapter_part: null
   }
   assert equal ($chapter | parse_chapter_title) $expected
 }
@@ -433,11 +433,11 @@ def test_parse_chapter_title_opening_credits [] {
 def test_parse_chapter_title_opening_credits_chapter_one [] {
   let chapter = 'Opening Credits / Chapter 1'
   let expected = {
-    part: ""
+    part: null
     part_title: ""
     chapter: "Opening Credits / Chapter 1"
     chapter_title: ""
-    chapter_part: ""
+    chapter_part: null
   }
   assert equal ($chapter | parse_chapter_title) $expected
 }
