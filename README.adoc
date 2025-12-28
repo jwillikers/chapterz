@@ -51,7 +51,7 @@ cd chapterz
 --
 [,sh]
 ----
-./chapterz.nu book.m4b
+nu chapterz.nu book.m4b
 ----
 
 Alternatively, if you're using Nix but not using `nix-direnv`, you can run `nix build` and then execute the script in the resulting build output with `result/bin/chapterz.nu`.
@@ -59,8 +59,16 @@ Alternatively, if you're using Nix but not using `nix-direnv`, you can run `nix 
 
 . Now edit the output from the previous command as necessary and paste it in the _Add medium_ dialog in MusicBrainz.
 
-The `embed-chapterz.nu` script can be used in the same manner.
-I takes an M4B file as its first argument and either a MusicBrainz Release ID, an Audible ASIN, or the path to a `chapters.txt` file as its second argument.
+=== Embedding Chapters
+
+The `embed-chapterz.nu` script can be used in the same manner as the `chapterz.nu` script.
+It takes an M4B file as its first argument and either a MusicBrainz Release ID, an Audible ASIN, or the path to a `chapters.txt` file as its second argument.
+The example to embed chapters for the file `Piranesi.m4b` from the MusicBrainz Release https://musicbrainz.org/release/9219a403-d530-4f4d-ab4a-19e4be647a0e[9219a403-d530-4f4d-ab4a-19e4be647a0e] would look as follows.
+
+[,sh]
+----
+nu embed-chapterz.nu Piranesi.m4b 9219a403-d530-4f4d-ab4a-19e4be647a0e
+----
 
 == A Little More Detail
 
