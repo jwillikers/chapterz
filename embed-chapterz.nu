@@ -9,7 +9,7 @@ def main [
   m4b: path # The M4B audiobook in which to embed the chapters
   input: string # The source of the chapters
   --combine-chapter-parts # Combine chapters split into multiple parts into individual chapters. Only works for chapters titled according to the MusicBrainz Audiobook style guideline.
-]: {
+] {
     let input_type = (
         if ($input | path parse | get stem) == "chapters" and ($input | path parse | get extension) == "txt" {
           "chapters.txt"
