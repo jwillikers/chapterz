@@ -166,9 +166,9 @@ export def rename_chapters [
       }
     } else if $c.index == ($chapters | length) {
       if $c.duration < 3min {
-        $c | update title "End Credits"
+        $c | update title "Closing Credits"
       } else {
-        $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix) / End Credits"
+        $c | update title $"($prefix)($chapter_word) ($c.index - $offset)($suffix) / Closing Credits"
       }
     } else {
       if $c.index - $offset == 0 {

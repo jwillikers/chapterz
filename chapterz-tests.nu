@@ -75,7 +75,7 @@ def test_has_default_chapters_audible [] {
     [2 "Chapter 2" 7191ms]
     [3 "Chapter 3" 1144834ms]
     [4 "Chapter 4" 1148453ms]
-    [5 "Epilogue / End Credits" 340334ms]
+    [5 "Epilogue / Closing Credits" 340334ms]
   ]
   assert equal ($chapters | has_default_chapters) false
 }
@@ -122,7 +122,7 @@ def test_rename_chapters_audible [] {
     [2 "Chapter 2" 15min]
     [3 "Chapter 3" 1144834ms]
     [4 "Chapter 4" 1148453ms]
-    [5 "Chapter 5 / End Credits" 30min]
+    [5 "Chapter 5 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters) $expected
 
@@ -140,7 +140,7 @@ def test_rename_chapters_audible [] {
     [2 "Chapter 2" 418842ms]
     [3 "Chapter 3" 1404064ms]
     [4 "Chapter 4" 538424ms]
-    [5 "Chapter 5 / End Credits" 325212ms]
+    [5 "Chapter 5 / Closing Credits" 325212ms]
   ]
   assert equal ($chapters | rename_chapters) $expected
 }
@@ -160,7 +160,7 @@ def test_rename_chapters_libro_fm [] {
     [2 "Chapter 2" 7191ms]
     [3 "Chapter 3" 1144834ms]
     [4 "Chapter 4" 1148453ms]
-    [5 "Chapter 5 / End Credits" 30min]
+    [5 "Chapter 5 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters) $expected
 }
@@ -180,7 +180,7 @@ def test_rename_chapters_separate_opening_credits [] {
     [2 "Chapter 1" 15min]
     [3 "Chapter 2" 1144834ms]
     [4 "Chapter 3" 1148453ms]
-    [5 "Chapter 4 / End Credits" 30min]
+    [5 "Chapter 4 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters) $expected
 }
@@ -200,7 +200,7 @@ def test_rename_chapters_separate_end_credits [] {
     [2 "Chapter 2" 15min]
     [3 "Chapter 3" 1144834ms]
     [4 "Chapter 4" 1148453ms]
-    [5 "End Credits" 30sec]
+    [5 "Closing Credits" 30sec]
   ]
   assert equal ($chapters | rename_chapters) $expected
 }
@@ -220,7 +220,7 @@ def test_rename_chapters_separate_credits [] {
     [2 "Chapter 1" 15min]
     [3 "Chapter 2" 1144834ms]
     [4 "Chapter 3" 1148453ms]
-    [5 "End Credits" 15sec]
+    [5 "Closing Credits" 15sec]
   ]
   assert equal ($chapters | rename_chapters) $expected
 }
@@ -240,7 +240,7 @@ def test_rename_chapters_offset [] {
     [2 "Chapter 1" 7191ms]
     [3 "Chapter 2" 1144834ms]
     [4 "Chapter 3" 1148453ms]
-    [5 "Chapter 4 / End Credits" 30min]
+    [5 "Chapter 4 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters --offset 1) $expected
 
@@ -260,7 +260,7 @@ def test_rename_chapters_offset [] {
     [3 "Epigraph" 7191ms]
     [4 "Chapter 1" 1144834ms]
     [5 "Chapter 2" 1148453ms]
-    [6 "Chapter 3 / End Credits" 30min]
+    [6 "Chapter 3 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters --offset 3) $expected
 }
@@ -280,7 +280,7 @@ def test_rename_chapters_prefix [] {
     [2 'Part One: "ABC", Chapter 2' 7191ms]
     [3 'Part One: "ABC", Chapter 3' 1144834ms]
     [4 'Part One: "ABC", Chapter 4' 1148453ms]
-    [5 'Part One: "ABC", Chapter 5 / End Credits' 30min]
+    [5 'Part One: "ABC", Chapter 5 / Closing Credits' 30min]
   ]
   assert equal ($chapters | rename_chapters --prefix 'Part One: "ABC", ') $expected
 }
@@ -300,7 +300,7 @@ def test_rename_chapters_suffix [] {
     [2 'Chapter 2: ""' 7191ms]
     [3 'Chapter 3: ""' 1144834ms]
     [4 'Chapter 4: ""' 1148453ms]
-    [5 'Chapter 5: "" / End Credits' 30min]
+    [5 'Chapter 5: "" / Closing Credits' 30min]
   ]
   assert equal ($chapters | rename_chapters --suffix ': ""') $expected
 }
@@ -320,7 +320,7 @@ def test_rename_chapters_prefix_suffix [] {
     [2 'Part One: "ABC", Chapter 1: ""' 7191ms]
     [3 'Part One: "ABC", Chapter 2: ""' 1144834ms]
     [4 'Part One: "ABC", Chapter 3: ""' 1148453ms]
-    [5 'Part One: "ABC", Chapter 4: "" / End Credits' 30min]
+    [5 'Part One: "ABC", Chapter 4: "" / Closing Credits' 30min]
   ]
   assert equal ($chapters | rename_chapters --prefix 'Part One: "ABC", ' --suffix ': ""') $expected
 }
@@ -340,7 +340,7 @@ def test_rename_chapters_chapter_word [] {
     [2 "Part 2" 7191ms]
     [3 "Part 3" 1144834ms]
     [4 "Part 4" 1148453ms]
-    [5 "Part 5 / End Credits" 30min]
+    [5 "Part 5 / Closing Credits" 30min]
   ]
   assert equal ($chapters | rename_chapters --chapter-word "Part") $expected
 }
