@@ -77,6 +77,56 @@ def test_round_to_second_using_cumulative_offset_edge_cases [] {
   assert equal ($rounded | math sum) 7sec
 }
 
+# Generate a reproducible list of track durations between 1 second and 2 hours using a linear congruential generator.
+def pseudo_random_durations [count: int] {
+  1..$count | reduce --fold {seed: 42 durations: []} {|_, acc|
+    let seed = ($acc.seed * 1103515245 + 12345) mod 2147483648
+    {
+      seed: $seed
+      durations: ($acc.durations | append (($seed mod 7199000 + 1000) * 1ms))
+    }
+  } | get durations
+}
+
+def test_round_to_second_using_cumulative_offset_does_not_accumulate_error [] {
+  # Rounding every track up or down on its own lets the error grow with each track.
+  # The total of the rounded durations must stay within half a second of the actual total at every track.
+  for durations in [
+    (pseudo_random_durations 500)
+    # Every track rounding up on its own.
+    (1..200 | each { 1600ms })
+    # Every track rounding down on its own.
+    (1..200 | each { 1400ms })
+    # Every track exactly between two seconds.
+    (1..200 | each { 2500ms })
+  ] {
+    let rounded = $durations | round_to_second_using_cumulative_offset
+    assert equal ($rounded | length) ($durations | length)
+    assert ($rounded | all {|d| $d mod 1sec == 0ms })
+    let actual_start_offsets = $durations | append 0ms | lengths_to_start_offsets
+    let rounded_start_offsets = $rounded | append 0ms | lengths_to_start_offsets
+    $actual_start_offsets | zip $rounded_start_offsets | enumerate | each {|it|
+      let error = ($it.item.1 - $it.item.0) | math abs
+      assert ($error <= 500ms) $"Accumulated rounding error of ($error) after ($it.index) tracks"
+    }
+  }
+}
+
+def test_musicbrainz_lengths_do_not_accumulate_error [] {
+  # The MusicBrainz track lengths, once rounded, must add up to the actual total within half a second.
+  let durations = pseudo_random_durations 100
+  let chapters = $durations | enumerate | each {|d| {index: ($d.index + 1) title: $"Chapter ($d.index + 1)" duration: $d.item} }
+  let rounded = $chapters | merge ($chapters.duration | round_to_second_using_cumulative_offset | wrap duration)
+  let total = (
+    $rounded
+    | format_chapters --format musicbrainz
+    | parse --regex '\((?<h>\d+):(?<m>\d+):(?<s>\d+)\)$'
+    | each {|l| ($l.h | into int) * 1hr + ($l.m | into int) * 1min + ($l.s | into int) * 1sec }
+    | math sum
+  )
+  assert ((($total - ($durations | math sum)) | math abs) <= 500ms)
+}
+
 def test_round_to_second_using_cumulative_offset [] {
   let durations = [
     30069ms
@@ -901,6 +951,8 @@ def main [] {
     {name: "chapters_from_musicbrainz_release_media" test: {|| test_chapters_from_musicbrainz_release_media }}
     {name: "round_to_second_using_cumulative_offset" test: {|| test_round_to_second_using_cumulative_offset }}
     {name: "round_to_second_using_cumulative_offset_edge_cases" test: {|| test_round_to_second_using_cumulative_offset_edge_cases }}
+    {name: "round_to_second_using_cumulative_offset_does_not_accumulate_error" test: {|| test_round_to_second_using_cumulative_offset_does_not_accumulate_error }}
+    {name: "musicbrainz_lengths_do_not_accumulate_error" test: {|| test_musicbrainz_lengths_do_not_accumulate_error }}
     {name: "has_default_chapters" test: {|| test_has_default_chapters }}
     {name: "rename_chapters" test: {|| test_rename_chapters }}
     {name: "unquote" test: {|| test_unquote }}
