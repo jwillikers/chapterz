@@ -53,6 +53,11 @@
       {
         apps = {
           inherit (nix-update-scripts.apps.${system}) update-nix-direnv update-nixos-release;
+          chapterz = {
+            type = "app";
+            program = pkgs.lib.getExe pkgs.chapterz;
+            meta.description = "Print the chapters for an audiobook";
+          };
           default = self.apps.${system}.chapterz;
         };
         devShells.default = pkgs.mkShellNoCC {
