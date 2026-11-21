@@ -60,6 +60,9 @@
           };
           default = self.apps.${system}.chapterz;
         };
+        checks = {
+          inherit (pkgs) chapterz;
+        };
         devShells.default = pkgs.mkShellNoCC {
           inherit (pre-commit) shellHook;
           nativeBuildInputs =
