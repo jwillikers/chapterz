@@ -11,12 +11,14 @@ export const user_agent = $"chapterz/($chapterz_version) \( https://github.com/j
 export def lengths_to_start_offsets []: [
   list<duration> -> list<duration>
 ] {
-  let lengths = $in | enumerate
-  $lengths | each {|i|
-    $lengths | where index < $i.index | reduce --fold 0ms {|it, acc|
-      $it.item + $acc
+  $in
+  | reduce --fold {total: 0ms offsets: []} {|length, acc|
+    {
+      total: ($acc.total + $length)
+      offsets: ($acc.offsets | append $acc.total)
     }
   }
+  | get offsets
 }
 
 # Format the duration of a chapter in format used for audiobook chapters
@@ -81,20 +83,50 @@ export def get_musicbrainz_release []: string -> record {
   http get --headers [User-Agent $user_agent Accept "application/json"] $"($url)/($id)/?inc=recordings"
 }
 
-# Parse chapters out of MusicBrainz recordings data.
+# Parse chapters out of MusicBrainz recordings data in the chapters.txt format.
 # $release | get media
 export def chapters_from_musicbrainz_release_media []: table -> string {
-  (
-    $in
-    | get tracks
-    | flatten
-    | each {|recording|
-      # Unfortunately, lengths are in seconds and not milliseconds.
-      let time = ($recording.length | into duration --unit ms | collect | lengths_to_start_offsets | each {|t| $t | format_chapter_duration})
-      $"($time) ($recording.title)"
-    }
-    | str join "\n"
+  let tracks = $in | get tracks | flatten
+  let start_offsets = (
+    $tracks
+    | get length
+    | each {|length| $length | into duration --unit ms }
+    | lengths_to_start_offsets
   )
+  $tracks
+  | enumerate
+  | each {|t|
+    $"($start_offsets | get $t.index | format_chapter_duration) ($t.item.title)"
+  }
+  | str join "\n"
+}
+
+# Format the duration of a chapter as HH:MM:SS, rounded to the nearest second, as used by MusicBrainz track lengths.
+export def format_musicbrainz_length []: duration -> string {
+  let seconds = ($in / 1sec | math round | into int)
+  let hours = $seconds // 3600 | fill --alignment right --character "0" --width 2
+  let minutes = $seconds mod 3600 // 60 | fill --alignment right --character "0" --width 2
+  let seconds = $seconds mod 60 | fill --alignment right --character "0" --width 2
+  $"($hours):($minutes):($seconds)"
+}
+
+# Determine the type of input.
+#
+# Returns one of "m4b", "chapters.txt", "MusicBrainz", "ASIN", or null when the input is unsupported.
+export def detect_input_type []: string -> any {
+  let input = $in
+  let parsed = $input | path parse
+  if $parsed.extension == "m4b" {
+    "m4b"
+  } else if $parsed.stem == "chapters" and $parsed.extension == "txt" {
+    "chapters.txt"
+  } else if $input =~ '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}' {
+    "MusicBrainz" # Release ID
+  } else if $input =~ '[a-zA-Z0-9]{10}' {
+    "ASIN"
+  } else {
+    null
+  }
 }
 
 # Determine if the chapters are named according to standard defaults.
@@ -194,50 +226,54 @@ export def rename_chapters [
 #     []
 # }
 
+# Remove a matching pair of quotes surrounding a string.
+export def unquote []: string -> string {
+  $in | str trim | str replace --regex '^"(.*)"$|^“(.*)”$|^\x27(.*)\x27$' '$1$2$3'
+}
+
 # Parse the Part, Chapter, and Title portions of a chapter.
-export def parse_chapter_title []: string -> record<part: string, part_title: string, chapter: string, chapter_title: string, chapter_part: string> {
-  let input = $in
-  (
-    $input
-    # todo Split into multiple rows if there's a '/'.
-    | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s/]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
-    | each {|c|
-      let part_title = (
-        if ($c.part_title | is-empty) {
-          ""
-        } else {
-          $c.part_title
-        }
-      )
-      let chapter_title = (
-        if ($c.chapter_title | is-empty) {
-          ""
-        } else {
-          $c.chapter_title
-        }
-      )
+#
+# Handles titles following the MusicBrainz Audiobook style guideline, with or without quotes around the titles.
+#
+# Part One: "The Part Title", Chapter 1: "The Chapter Title", Part 1
+# Part One, Chapter 1: The Chapter Title
+# Chapter 1: The Chapter Title, Part 1
+# Epigraph / Chapter 1: The Chapter Title
+#
+# Tracks combined with " / " are split into their labels and titles, which are each joined with " / ".
+# Quote a part title that contains a comma so that it isn't mistaken for the end of the part.
+export def parse_chapter_title []: string -> record<part: any, part_title: string, chapter: string, chapter_title: string, chapter_part: any> {
+  let input = $in | str trim
+
+  # A trailing ", Part <n>" indicates that this is one part of a chapter split across multiple tracks.
+  let chapter_part_regex = ',\s+(Part \d+)(?=\s+/\s|$)'
+  let chapter_part = $input | parse --regex $chapter_part_regex | get capture0?.0?
+  let rest = $input | str replace --regex $chapter_part_regex ''
+
+  # A leading "Part <x>", optionally with a title, followed by a comma and the chapter.
+  let part = $rest | parse --regex '^(?<part>Part \w+)(?::\s*(?<part_title>"[^"]*"|“[^”]*”|[^,]*))?,\s+(?<rest>.+)$' | get 0?
+  let rest = if $part == null { $rest } else { $part.rest }
+
+  # Split combined tracks on " / " outside of double quotes.
+  let segments = (
+    $rest
+    | split row --regex '\s+/\s+(?=(?:[^"]*"[^"]*")*[^"]*$)'
+    | each {|segment|
+      let parsed = $segment | parse --regex '^(?<label>[^:]+?)(?::\s*(?<title>.*))?$' | first
       {
-        part: $c.part
-        part_title: (
-          $part_title
-          | str trim --char ':' --left
-          | str trim --left
-          | str trim --char '"'
-          | str trim --char "'"
-        )
-        chapter: $c.chapter
-        chapter_title: (
-          $chapter_title
-          | str trim --char ':' --left
-          | str trim --left
-          | str trim --char '"'
-          | str trim --char "'"
-        )
-        chapter_part: $c.chapter_part
+        label: ($parsed.label | str trim)
+        title: ($parsed.title | default "" | unquote)
       }
     }
-    | first
   )
+
+  {
+    part: $part.part?
+    part_title: ($part.part_title? | default "" | unquote)
+    chapter: ($segments.label | str join " / ")
+    chapter_title: ($segments.title | where {|t| $t | is-not-empty } | str join " / ")
+    chapter_part: $chapter_part
+  }
 }
 
 # Combine chapters split into multiple parts into complete chapters
@@ -289,6 +325,51 @@ export def combine_chapter_parts []: table<index: int, title: string, duration: 
   )
 }
 
+export const chapter_formats = ["musicbrainz" "chapters.txt" "tone" "OpenLibrary" "debug"]
+
+# Format chapters for output.
+#
+# Start offsets are determined by the order of the chapters, so the indices may begin at any number.
+export def format_chapters [
+  --format: string = "musicbrainz" # One of "musicbrainz", "chapters.txt", "tone", "OpenLibrary", or "debug"
+]: table<index: int, title: string, duration: duration> -> list<any> {
+  let chapters = $in
+  if $format not-in $chapter_formats {
+    error make {msg: $"Unsupported format ($format). Supported formats are ($chapter_formats | str join ', ')."}
+  }
+  let start_offsets = $chapters | get duration | lengths_to_start_offsets
+  $chapters
+  | enumerate
+  | each {|it|
+    let c = $it.item
+    let start_offset = $start_offsets | get $it.index
+    let length = $c.duration | format_musicbrainz_length
+    match $format {
+      "musicbrainz" => $"($c.index) ($c.title) \(($length)\)"
+      "chapters.txt" => $"($start_offset | format_chapter_duration) ($c.title)"
+      "tone" => {
+        index: $c.index
+        start: (($start_offset / 1ms) | math round)
+        length: (($c.duration / 1ms) | math round)
+        title: $c.title
+      }
+      "OpenLibrary" => {
+        let chapter_components = $c.title | parse_chapter_title
+        # todo Handle parts.
+        $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($start_offset | format_chapter_duration)"
+      }
+      "debug" => {
+        index: $c.index
+        title: $c.title
+        duration: $c.duration
+        duration_millis: ($c.duration | format duration ms)
+        chapters_txt_start_offset: ($start_offset | format_chapter_duration)
+        musicbrainz_length: $length
+      }
+    }
+  }
+}
+
 # Print out the chapters for an audiobook in the format used when adding the track list to MusicBrainz.
 #
 # Takes the path to an M4B file, an Audible ASIN, or a MusicBrainz Release ID.
@@ -303,17 +384,15 @@ def main [
   --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
   --round # Force rounding when outputting in the chapters.txt format
 ] {
-  let input_type = (
-    if ($input | path parse | get extension) == "m4b" {
-      "m4b"
-    } else if $input =~ '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}' {
-      "MusicBrainz" # Release ID
-    } else if $input =~ '[a-zA-Z0-9]{10}' {
-      "ASIN"
-    } else {
-      null
-    }
-  )
+  if $format not-in $chapter_formats {
+    log error $"Unsupported format (ansi purple)($format)(ansi reset). Supported formats are ($chapter_formats | str join ', ')."
+    exit 1
+  }
+  let input_type = $input | detect_input_type
+  if $input_type == "chapters.txt" {
+    log error $"Unsupported input (ansi purple)($input)(ansi reset). Use embed-chapterz.nu to embed a chapters.txt file."
+    exit 1
+  }
   if $input_type == null {
     log error $"Unsupported input (ansi purple)($input)(ansi reset)"
     exit 1
@@ -354,7 +433,7 @@ def main [
         | enumerate
         | each {|recording|
           {
-            index: $recording.index
+            index: ($recording.index + 1)
             title: $recording.item.title
             duration: ($recording.item.length | into duration --unit ms)
           }
@@ -370,10 +449,6 @@ def main [
       $chapters
     }
   )
-  let start_offsets = (
-    $chapters | get duration | lengths_to_start_offsets
-  )
-
   let rename_chapters = (
     if $rename_chapters == null {
       $chapters | has_default_chapters
@@ -397,67 +472,7 @@ def main [
 
   (
     $chapters
-    | each {|c|
-      let d = $c.duration
-      let seconds = (
-        ($d mod 1min) / 1sec
-        | math round
-      )
-      let minutes = (
-        ($d mod 1hr) // 1min
-        | (
-          let i = $in;
-          if $seconds == 60 { $i + 1 } else { $i }
-        )
-      )
-      let hours = (
-        $d // 1hr
-        | (
-          let i = $in;
-          if $minutes == 60 { $i + 1 } else { $i }
-        )
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
-      let seconds = (
-        (if $seconds == 60 { 0 } else $seconds)
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
-      let minutes = (
-        (if $minutes == 60 { 0 } else $minutes)
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
-      if $format == "musicbrainz" {
-        $"($c.index) ($c.title) \(($hours):($minutes):($seconds)\)"
-      } else if $format == "chapters.txt" {
-        let offset = $start_offsets | get $c.index | format_chapter_duration
-        $"($offset) ($c.title)"
-      } else if $format == "tone" {
-        let start = (($start_offsets | get $c.index) / 1ms) | math round
-        {
-          index: $c.index
-          start: $start
-          length: (($d / 1ms) | math round)
-          title: $c.title
-        }
-      } else if $format == "OpenLibrary" {
-        let offset = $start_offsets | get $c.index | format_chapter_duration
-        let chapter_components = $c.title | parse_chapter_title
-        # todo Handle parts.
-        $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($offset)"
-      } else if $format == "debug" {
-        {
-          index: $c.index
-          title: $c.title
-          duration: $c.duration
-          duration_millis: ($c.duration | format duration ms)
-          chapters_txt_start_offset: ($start_offsets | get $c.index | format_chapter_duration)
-          musicbrainz_length: $"($hours):($minutes):($seconds)"
-        }
-      }
-    }
+    | format_chapters --format $format
     | (
       let i = $in;
       if $format == "tone" {

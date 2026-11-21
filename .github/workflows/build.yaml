@@ -7,7 +7,6 @@ name: Build
       - '**.nu'
       - .github/workflows/build.yaml
       - flake.lock
-      - packages/**
   push:
     branches: ["main"]
     paths:
@@ -15,14 +14,13 @@ name: Build
       - '**.nu'
       - .github/workflows/build.yaml
       - flake.lock
-      - packages/**
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
       - name: Build chapterz
         run: nix build '.#chapterz'

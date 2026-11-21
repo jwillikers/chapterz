@@ -10,17 +10,11 @@ def main [
   input: string # The source of the chapters
   --combine-chapter-parts # Combine chapters split into multiple parts into individual chapters. Only works for chapters titled according to the MusicBrainz Audiobook style guideline.
 ] {
-    let input_type = (
-        if ($input | path parse | get stem) == "chapters" and ($input | path parse | get extension) == "txt" {
-          "chapters.txt"
-        } else if $input =~ '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}' {
-          "MusicBrainz" # Release ID
-        } else if $input =~ '[a-zA-Z0-9]{10}' {
-          "ASIN"
-        } else {
-          null
-        }
-    )
+    let input_type = $input | detect_input_type
+    if $input_type == "m4b" {
+      log error $"Unsupported input (ansi purple)($input)(ansi reset). Chapters can't be read from an M4B file."
+      exit 1
+    }
     if $input_type == null {
       log error $"Unsupported input (ansi purple)($input)(ansi reset)"
       exit 1

@@ -10,7 +10,7 @@
         treefmt-nix.follows = "treefmt-nix";
       };
     };
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs = {
@@ -53,7 +53,15 @@
       {
         apps = {
           inherit (nix-update-scripts.apps.${system}) update-nix-direnv update-nixos-release;
+          chapterz = {
+            type = "app";
+            program = pkgs.lib.getExe pkgs.chapterz;
+            meta.description = "Print the chapters for an audiobook";
+          };
           default = self.apps.${system}.chapterz;
+        };
+        checks = {
+          inherit (pkgs) chapterz;
         };
         devShells.default = pkgs.mkShellNoCC {
           inherit (pre-commit) shellHook;
@@ -66,9 +74,9 @@
               lychee
               nushell
               treefmtEval.config.build.wrapper
-              # Make formatters available for IDE's.
-              (builtins.attrValues treefmtEval.config.build.programs)
             ]
+            # Make formatters available for IDE's.
+            ++ builtins.attrValues treefmtEval.config.build.programs
             ++ pre-commit.enabledPackages;
           inputsFrom = with pkgs; [
             chapterz
@@ -82,7 +90,8 @@
       }
     )
     // {
-      inherit overlays;
-      default = overlays.chapterz;
+      overlays = overlays // {
+        default = overlays.chapterz;
+      };
     };
 }

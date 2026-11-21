@@ -27,7 +27,7 @@ run derivation="chapterz":
 alias t := test
 
 test:
-    nu packages/chapterz/chapterz-tests.nu
+    nu chapterz-tests.nu
 
 alias u := update
 alias up := update
