@@ -224,50 +224,54 @@ export def rename_chapters [
 #     []
 # }
 
+# Remove a matching pair of quotes surrounding a string.
+export def unquote []: string -> string {
+  $in | str trim | str replace --regex '^"(.*)"$|^“(.*)”$|^\x27(.*)\x27$' '$1$2$3'
+}
+
 # Parse the Part, Chapter, and Title portions of a chapter.
-export def parse_chapter_title []: string -> record<part: string, part_title: string, chapter: string, chapter_title: string, chapter_part: string> {
-  let input = $in
-  (
-    $input
-    # todo Split into multiple rows if there's a '/'.
-    | parse --regex '(?<part>Part \w+)?(?<part_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter>[\w\s/]+(?:\s\d+)?)(?<chapter_title>: \"[\w\s]+\")?(?:,\s)?(?<chapter_part>Part \d+)?'
-    | each {|c|
-      let part_title = (
-        if ($c.part_title | is-empty) {
-          ""
-        } else {
-          $c.part_title
-        }
-      )
-      let chapter_title = (
-        if ($c.chapter_title | is-empty) {
-          ""
-        } else {
-          $c.chapter_title
-        }
-      )
+#
+# Handles titles following the MusicBrainz Audiobook style guideline, with or without quotes around the titles.
+#
+# Part One: "The Part Title", Chapter 1: "The Chapter Title", Part 1
+# Part One, Chapter 1: The Chapter Title
+# Chapter 1: The Chapter Title, Part 1
+# Epigraph / Chapter 1: The Chapter Title
+#
+# Tracks combined with " / " are split into their labels and titles, which are each joined with " / ".
+# Quote a part title that contains a comma so that it isn't mistaken for the end of the part.
+export def parse_chapter_title []: string -> record<part: any, part_title: string, chapter: string, chapter_title: string, chapter_part: any> {
+  let input = $in | str trim
+
+  # A trailing ", Part <n>" indicates that this is one part of a chapter split across multiple tracks.
+  let chapter_part_regex = ',\s+(Part \d+)(?=\s+/\s|$)'
+  let chapter_part = $input | parse --regex $chapter_part_regex | get capture0?.0?
+  let rest = $input | str replace --regex $chapter_part_regex ''
+
+  # A leading "Part <x>", optionally with a title, followed by a comma and the chapter.
+  let part = $rest | parse --regex '^(?<part>Part \w+)(?::\s*(?<part_title>"[^"]*"|“[^”]*”|[^,]*))?,\s+(?<rest>.+)$' | get 0?
+  let rest = if $part == null { $rest } else { $part.rest }
+
+  # Split combined tracks on " / " outside of double quotes.
+  let segments = (
+    $rest
+    | split row --regex '\s+/\s+(?=(?:[^"]*"[^"]*")*[^"]*$)'
+    | each {|segment|
+      let parsed = $segment | parse --regex '^(?<label>[^:]+?)(?::\s*(?<title>.*))?$' | first
       {
-        part: $c.part
-        part_title: (
-          $part_title
-          | str trim --char ':' --left
-          | str trim --left
-          | str trim --char '"'
-          | str trim --char "'"
-        )
-        chapter: $c.chapter
-        chapter_title: (
-          $chapter_title
-          | str trim --char ':' --left
-          | str trim --left
-          | str trim --char '"'
-          | str trim --char "'"
-        )
-        chapter_part: $c.chapter_part
+        label: ($parsed.label | str trim)
+        title: ($parsed.title | default "" | unquote)
       }
     }
-    | first
   )
+
+  {
+    part: $part.part?
+    part_title: ($part.part_title? | default "" | unquote)
+    chapter: ($segments.label | str join " / ")
+    chapter_title: ($segments.title | where {|t| $t | is-not-empty } | str join " / ")
+    chapter_part: $chapter_part
+  }
 }
 
 # Combine chapters split into multiple parts into complete chapters
