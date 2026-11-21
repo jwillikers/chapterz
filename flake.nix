@@ -66,9 +66,9 @@
               lychee
               nushell
               treefmtEval.config.build.wrapper
-              # Make formatters available for IDE's.
-              (builtins.attrValues treefmtEval.config.build.programs)
             ]
+            # Make formatters available for IDE's.
+            ++ builtins.attrValues treefmtEval.config.build.programs
             ++ pre-commit.enabledPackages;
           inputsFrom = with pkgs; [
             chapterz
