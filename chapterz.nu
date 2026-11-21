@@ -11,12 +11,14 @@ export const user_agent = $"chapterz/($chapterz_version) \( https://github.com/j
 export def lengths_to_start_offsets []: [
   list<duration> -> list<duration>
 ] {
-  let lengths = $in | enumerate
-  $lengths | each {|i|
-    $lengths | where index < $i.index | reduce --fold 0ms {|it, acc|
-      $it.item + $acc
+  $in
+  | reduce --fold {total: 0ms offsets: []} {|length, acc|
+    {
+      total: ($acc.total + $length)
+      offsets: ($acc.offsets | append $acc.total)
     }
   }
+  | get offsets
 }
 
 # Format the duration of a chapter in format used for audiobook chapters
