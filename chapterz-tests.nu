@@ -4,6 +4,30 @@ use std assert
 
 use chapterz.nu *
 
+def test_format_musicbrainz_length [] {
+  assert equal (0ms | format_musicbrainz_length) "00:00:00"
+  assert equal (1499ms | format_musicbrainz_length) "00:00:01"
+  assert equal (1500ms | format_musicbrainz_length) "00:00:02"
+  assert equal (3723004ms | format_musicbrainz_length) "01:02:03"
+  # Rounding up carries into the minutes and hours.
+  assert equal (59500ms | format_musicbrainz_length) "00:01:00"
+  assert equal (3599500ms | format_musicbrainz_length) "01:00:00"
+}
+
+
+def test_detect_input_type [] {
+  assert equal ("book.m4b" | detect_input_type) "m4b"
+  assert equal ("/path/to/My Audiobook.m4b" | detect_input_type) "m4b"
+  assert equal ("chapters.txt" | detect_input_type) "chapters.txt"
+  assert equal ("some/dir/chapters.txt" | detect_input_type) "chapters.txt"
+  assert equal ("9219a403-d530-4f4d-ab4a-19e4be647a0e" | detect_input_type) "MusicBrainz"
+  assert equal ("B0036S4B2G" | detect_input_type) "ASIN"
+  assert equal ("notes.txt" | detect_input_type) null
+  assert equal ("" | detect_input_type) null
+  assert equal ("abc" | detect_input_type) null
+}
+
+
 def test_chapters_from_musicbrainz_release_media [] {
   let media = [
     {
@@ -560,6 +584,8 @@ def test_combine_chapter_parts [] {
 }
 
 def main [] {
+  test_format_musicbrainz_length
+  test_detect_input_type
   test_chapters_from_musicbrainz_release_media
   test_round_to_second_using_cumulative_offset
   test_has_default_chapters

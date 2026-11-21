@@ -99,6 +99,34 @@ export def chapters_from_musicbrainz_release_media []: table -> string {
   | str join "\n"
 }
 
+# Format the duration of a chapter as HH:MM:SS, rounded to the nearest second, as used by MusicBrainz track lengths.
+export def format_musicbrainz_length []: duration -> string {
+  let seconds = ($in / 1sec | math round | into int)
+  let hours = $seconds // 3600 | fill --alignment right --character "0" --width 2
+  let minutes = $seconds mod 3600 // 60 | fill --alignment right --character "0" --width 2
+  let seconds = $seconds mod 60 | fill --alignment right --character "0" --width 2
+  $"($hours):($minutes):($seconds)"
+}
+
+# Determine the type of input.
+#
+# Returns one of "m4b", "chapters.txt", "MusicBrainz", "ASIN", or null when the input is unsupported.
+export def detect_input_type []: string -> any {
+  let input = $in
+  let parsed = $input | path parse
+  if $parsed.extension == "m4b" {
+    "m4b"
+  } else if $parsed.stem == "chapters" and $parsed.extension == "txt" {
+    "chapters.txt"
+  } else if $input =~ '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}' {
+    "MusicBrainz" # Release ID
+  } else if $input =~ '[a-zA-Z0-9]{10}' {
+    "ASIN"
+  } else {
+    null
+  }
+}
+
 # Determine if the chapters are named according to standard defaults.
 #
 # Default naming schemes:
@@ -305,17 +333,11 @@ def main [
   --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
   --round # Force rounding when outputting in the chapters.txt format
 ] {
-  let input_type = (
-    if ($input | path parse | get extension) == "m4b" {
-      "m4b"
-    } else if $input =~ '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}' {
-      "MusicBrainz" # Release ID
-    } else if $input =~ '[a-zA-Z0-9]{10}' {
-      "ASIN"
-    } else {
-      null
-    }
-  )
+  let input_type = $input | detect_input_type
+  if $input_type == "chapters.txt" {
+    log error $"Unsupported input (ansi purple)($input)(ansi reset). Use embed-chapterz.nu to embed a chapters.txt file."
+    exit 1
+  }
   if $input_type == null {
     log error $"Unsupported input (ansi purple)($input)(ansi reset)"
     exit 1
@@ -401,38 +423,9 @@ def main [
     $chapters
     | each {|c|
       let d = $c.duration
-      let seconds = (
-        ($d mod 1min) / 1sec
-        | math round
-      )
-      let minutes = (
-        ($d mod 1hr) // 1min
-        | (
-          let i = $in;
-          if $seconds == 60 { $i + 1 } else { $i }
-        )
-      )
-      let hours = (
-        $d // 1hr
-        | (
-          let i = $in;
-          if $minutes == 60 { $i + 1 } else { $i }
-        )
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
-      let seconds = (
-        (if $seconds == 60 { 0 } else $seconds)
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
-      let minutes = (
-        (if $minutes == 60 { 0 } else $minutes)
-        | into string
-        | fill --width 2 --alignment right --character '0'
-      )
+      let length = $d | format_musicbrainz_length
       if $format == "musicbrainz" {
-        $"($c.index) ($c.title) \(($hours):($minutes):($seconds)\)"
+        $"($c.index) ($c.title) \(($length)\)"
       } else if $format == "chapters.txt" {
         let offset = $start_offsets | get $c.index | format_chapter_duration
         $"($offset) ($c.title)"
@@ -456,7 +449,7 @@ def main [
           duration: $c.duration
           duration_millis: ($c.duration | format duration ms)
           chapters_txt_start_offset: ($start_offsets | get $c.index | format_chapter_duration)
-          musicbrainz_length: $"($hours):($minutes):($seconds)"
+          musicbrainz_length: $length
         }
       }
     }
