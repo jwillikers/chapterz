@@ -81,20 +81,22 @@ export def get_musicbrainz_release []: string -> record {
   http get --headers [User-Agent $user_agent Accept "application/json"] $"($url)/($id)/?inc=recordings"
 }
 
-# Parse chapters out of MusicBrainz recordings data.
+# Parse chapters out of MusicBrainz recordings data in the chapters.txt format.
 # $release | get media
 export def chapters_from_musicbrainz_release_media []: table -> string {
-  (
-    $in
-    | get tracks
-    | flatten
-    | each {|recording|
-      # Unfortunately, lengths are in seconds and not milliseconds.
-      let time = ($recording.length | into duration --unit ms | collect | lengths_to_start_offsets | each {|t| $t | format_chapter_duration})
-      $"($time) ($recording.title)"
-    }
-    | str join "\n"
+  let tracks = $in | get tracks | flatten
+  let start_offsets = (
+    $tracks
+    | get length
+    | each {|length| $length | into duration --unit ms }
+    | lengths_to_start_offsets
   )
+  $tracks
+  | enumerate
+  | each {|t|
+    $"($start_offsets | get $t.index | format_chapter_duration) ($t.item.title)"
+  }
+  | str join "\n"
 }
 
 # Determine if the chapters are named according to standard defaults.
