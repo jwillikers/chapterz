@@ -87,7 +87,8 @@
       }
     )
     // {
-      inherit overlays;
-      default = overlays.chapterz;
+      overlays = overlays // {
+        default = overlays.chapterz;
+      };
     };
 }
