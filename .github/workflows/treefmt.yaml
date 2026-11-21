@@ -31,8 +31,8 @@ jobs:
   treefmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
       - name: Run treefmt
         run: nix develop --command treefmt --ci
       - uses: reviewdog/action-suggester@v1
