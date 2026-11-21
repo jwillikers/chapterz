@@ -319,6 +319,51 @@ export def combine_chapter_parts []: table<index: int, title: string, duration: 
   )
 }
 
+export const chapter_formats = ["musicbrainz" "chapters.txt" "tone" "OpenLibrary" "debug"]
+
+# Format chapters for output.
+#
+# Start offsets are determined by the order of the chapters, so the indices may begin at any number.
+export def format_chapters [
+  --format: string = "musicbrainz" # One of "musicbrainz", "chapters.txt", "tone", "OpenLibrary", or "debug"
+]: table<index: int, title: string, duration: duration> -> list<any> {
+  let chapters = $in
+  if $format not-in $chapter_formats {
+    error make {msg: $"Unsupported format ($format). Supported formats are ($chapter_formats | str join ', ')."}
+  }
+  let start_offsets = $chapters | get duration | lengths_to_start_offsets
+  $chapters
+  | enumerate
+  | each {|it|
+    let c = $it.item
+    let start_offset = $start_offsets | get $it.index
+    let length = $c.duration | format_musicbrainz_length
+    match $format {
+      "musicbrainz" => $"($c.index) ($c.title) \(($length)\)"
+      "chapters.txt" => $"($start_offset | format_chapter_duration) ($c.title)"
+      "tone" => {
+        index: $c.index
+        start: (($start_offset / 1ms) | math round)
+        length: (($c.duration / 1ms) | math round)
+        title: $c.title
+      }
+      "OpenLibrary" => {
+        let chapter_components = $c.title | parse_chapter_title
+        # todo Handle parts.
+        $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($start_offset | format_chapter_duration)"
+      }
+      "debug" => {
+        index: $c.index
+        title: $c.title
+        duration: $c.duration
+        duration_millis: ($c.duration | format duration ms)
+        chapters_txt_start_offset: ($start_offset | format_chapter_duration)
+        musicbrainz_length: $length
+      }
+    }
+  }
+}
+
 # Print out the chapters for an audiobook in the format used when adding the track list to MusicBrainz.
 #
 # Takes the path to an M4B file, an Audible ASIN, or a MusicBrainz Release ID.
@@ -333,6 +378,10 @@ def main [
   --rename-chapters: any = null # Whether to automatically rename the chapters using sensible defaults. Renames by default when the detected chapters appear to be named according to standard defaults.
   --round # Force rounding when outputting in the chapters.txt format
 ] {
+  if $format not-in $chapter_formats {
+    log error $"Unsupported format (ansi purple)($format)(ansi reset). Supported formats are ($chapter_formats | str join ', ')."
+    exit 1
+  }
   let input_type = $input | detect_input_type
   if $input_type == "chapters.txt" {
     log error $"Unsupported input (ansi purple)($input)(ansi reset). Use embed-chapterz.nu to embed a chapters.txt file."
@@ -378,7 +427,7 @@ def main [
         | enumerate
         | each {|recording|
           {
-            index: $recording.index
+            index: ($recording.index + 1)
             title: $recording.item.title
             duration: ($recording.item.length | into duration --unit ms)
           }
@@ -394,10 +443,6 @@ def main [
       $chapters
     }
   )
-  let start_offsets = (
-    $chapters | get duration | lengths_to_start_offsets
-  )
-
   let rename_chapters = (
     if $rename_chapters == null {
       $chapters | has_default_chapters
@@ -421,38 +466,7 @@ def main [
 
   (
     $chapters
-    | each {|c|
-      let d = $c.duration
-      let length = $d | format_musicbrainz_length
-      if $format == "musicbrainz" {
-        $"($c.index) ($c.title) \(($length)\)"
-      } else if $format == "chapters.txt" {
-        let offset = $start_offsets | get $c.index | format_chapter_duration
-        $"($offset) ($c.title)"
-      } else if $format == "tone" {
-        let start = (($start_offsets | get $c.index) / 1ms) | math round
-        {
-          index: $c.index
-          start: $start
-          length: (($d / 1ms) | math round)
-          title: $c.title
-        }
-      } else if $format == "OpenLibrary" {
-        let offset = $start_offsets | get $c.index | format_chapter_duration
-        let chapter_components = $c.title | parse_chapter_title
-        # todo Handle parts.
-        $"* ($chapter_components.chapter) | ($chapter_components.chapter_title) | ($offset)"
-      } else if $format == "debug" {
-        {
-          index: $c.index
-          title: $c.title
-          duration: $c.duration
-          duration_millis: ($c.duration | format duration ms)
-          chapters_txt_start_offset: ($start_offsets | get $c.index | format_chapter_duration)
-          musicbrainz_length: $length
-        }
-      }
-    }
+    | format_chapters --format $format
     | (
       let i = $in;
       if $format == "tone" {

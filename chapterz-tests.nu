@@ -701,6 +701,100 @@ def test_combine_chapter_parts [] {
   test_combine_chapter_parts_combine_one_chapter_three_parts
 }
 
+def sample_chapters [] {
+  [
+    [index title duration];
+    [1 "Opening Credits" 30069ms]
+    [2 'Chapter 1: "The Beginning"' 1144834ms]
+    [3 "Chapter 2" 1148453ms]
+    [4 "Closing Credits" 7191ms]
+  ]
+}
+
+def test_format_chapters_musicbrainz [] {
+  let expected = [
+    "1 Opening Credits (00:00:30)"
+    '2 Chapter 1: "The Beginning" (00:19:05)'
+    "3 Chapter 2 (00:19:08)"
+    "4 Closing Credits (00:00:07)"
+  ]
+  assert equal (sample_chapters | format_chapters) $expected
+  assert equal (sample_chapters | format_chapters --format musicbrainz) $expected
+}
+
+def test_format_chapters_chapters_txt [] {
+  let expected = [
+    "00:00:00.000 Opening Credits"
+    '00:00:30.069 Chapter 1: "The Beginning"'
+    "00:19:34.903 Chapter 2"
+    "00:38:43.356 Closing Credits"
+  ]
+  assert equal (sample_chapters | format_chapters --format chapters.txt) $expected
+}
+
+def test_format_chapters_start_offsets_independent_of_index [] {
+  # Start offsets come from the order of the chapters, not from their indices.
+  let zero_based = sample_chapters | update index {|c| $c.index - 1 }
+  assert equal (
+    $zero_based | format_chapters --format chapters.txt
+  ) (
+    sample_chapters | format_chapters --format chapters.txt
+  )
+}
+
+def test_format_chapters_tone [] {
+  let expected = [
+    [index start length title];
+    [1 0 30069 "Opening Credits"]
+    [2 30069 1144834 'Chapter 1: "The Beginning"']
+    [3 1174903 1148453 "Chapter 2"]
+    [4 2323356 7191 "Closing Credits"]
+  ]
+  assert equal (sample_chapters | format_chapters --format tone) $expected
+}
+
+def test_format_chapters_openlibrary [] {
+  let expected = [
+    "* Opening Credits |  | 00:00:00.000"
+    "* Chapter 1 | The Beginning | 00:00:30.069"
+    "* Chapter 2 |  | 00:19:34.903"
+    "* Closing Credits |  | 00:38:43.356"
+  ]
+  assert equal (sample_chapters | format_chapters --format OpenLibrary) $expected
+}
+
+def test_format_chapters_debug [] {
+  let actual = sample_chapters | format_chapters --format debug
+  assert equal ($actual | length) 4
+  assert equal ($actual | last) {
+    index: 4
+    title: "Closing Credits"
+    duration: 7191ms
+    duration_millis: "7191 ms"
+    chapters_txt_start_offset: "00:38:43.356"
+    musicbrainz_length: "00:00:07"
+  }
+}
+
+def test_format_chapters_unsupported_format [] {
+  assert error {|| sample_chapters | format_chapters --format bogus }
+}
+
+def test_format_chapters_empty [] {
+  assert equal ([] | format_chapters --format chapters.txt) []
+}
+
+def test_format_chapters [] {
+  test_format_chapters_musicbrainz
+  test_format_chapters_chapters_txt
+  test_format_chapters_start_offsets_independent_of_index
+  test_format_chapters_tone
+  test_format_chapters_openlibrary
+  test_format_chapters_debug
+  test_format_chapters_unsupported_format
+  test_format_chapters_empty
+}
+
 def main [] {
   let tests = [
     {name: "lengths_to_start_offsets" test: {|| test_lengths_to_start_offsets }}
@@ -714,6 +808,7 @@ def main [] {
     {name: "rename_chapters" test: {|| test_rename_chapters }}
     {name: "parse_chapter_title" test: {|| test_parse_chapter_title }}
     {name: "combine_chapter_parts" test: {|| test_combine_chapter_parts }}
+    {name: "format_chapters" test: {|| test_format_chapters }}
   ]
   let failures = $tests | each {|t|
     try {
